@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>CadTimer</title>
   
-  <!-- Web App Manifest & Apple Touch Icon for Home Screen -->
   <link rel="apple-touch-icon" href="CadTimer_Logo.png">
   <link rel="icon" type="image/png" href="CadTimer_Logo.png">
   <link rel="manifest" href='data:application/manifest+json,{"name":"CadTimer","short_name":"CadTimer","start_url":".","display":"standalone","background_color":"#121212","theme_color":"#121212","icons":[{"src":"CadTimer_Logo.png","sizes":"512x512","type":"image/png"}]}'>
@@ -14,7 +13,7 @@
     :root {
       --bg: #121212;
       --card: #1e1e1e;
-      --accent: #f1c40f; /* Logo Yellow */
+      --accent: #f1c40f;
       --accent-warn: #ff9800;
       --text: #ffffff;
       --text-dim: #aaaaaa;
@@ -35,7 +34,6 @@
     .display-panel { text-align: center; }
     .phase-label { font-size: 0.9rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; }
     
-    /* Timer & Cadence Adjustment Layout */
     .timer-container { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; }
     .timer { font-size: 3.2rem; font-weight: bold; font-variant-numeric: tabular-nums; flex: 1; text-align: center; }
     
@@ -63,14 +61,12 @@
 
     .info { font-size: 1.2rem; color: var(--accent); font-weight: 600; margin-top: 4px; }
 
-    /* Controls directly under timer */
     .controls { display: flex; gap: 12px; margin-top: 16px; }
     button.main-btn { flex: 1; padding: 16px; font-size: 1.2rem; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; text-transform: uppercase; }
     .btn-start { background: var(--accent); color: #000; }
     .btn-pause { background: var(--accent-warn); color: #000; }
     .btn-reset { background: #333; color: #fff; }
 
-    /* Preset Buttons Layout */
     .presets-container { display: flex; gap: 8px; margin-bottom: 8px; }
     .preset-wrapper { flex: 1; display: flex; gap: 2px; }
     .btn-preset { flex: 1; padding: 10px 4px; font-size: 0.9rem; font-weight: 600; background: var(--preset-bg); border: 1px solid var(--preset-border); color: #fff; border-radius: 8px 0 0 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s; }
@@ -97,59 +93,52 @@
 </head>
 <body>
 
-  <!-- Header with Logo and Yellow Text -->
   <div class="app-header">
     <img src="CadTimer_Logo.png" alt="Logo" class="header-logo">
     <h1>CadTimer</h1>
   </div>
 
-  <!-- Display & Main Controls Section -->
   <div class="card display-panel">
     <div id="phase" class="phase-label">Ready</div>
     
-    <!-- Timer Section with - and + adjustment buttons -->
     <div class="timer-container">
-      <button class="btn-adjust" onclick="adjustSPM(-1)">−</button>
+      <button class="btn-adjust" id="btn-minus">−</button>
       <div id="time-display" class="timer">00:00</div>
-      <button class="btn-adjust" onclick="adjustSPM(1)">+</button>
+      <button class="btn-adjust" id="btn-plus">+</button>
     </div>
 
     <div id="tempo-display" class="info">-- SPM</div>
     <div id="flash" class="visual-flash"></div>
 
-    <!-- Start & Reset Controls -->
     <div class="controls">
-      <button id="start-btn" class="main-btn btn-start" onclick="togglePlay()">Start</button>
-      <button class="main-btn btn-reset" onclick="reset()">Reset</button>
+      <button id="start-btn" class="main-btn btn-start">Start</button>
+      <button id="reset-btn" class="main-btn btn-reset">Reset</button>
     </div>
   </div>
 
-  <!-- Preset Buttons Container -->
   <div class="presets-container">
     <div class="preset-wrapper">
-      <button id="btn-preset-0" class="btn-preset" onclick="loadPreset(0)">Pre1</button>
-      <button class="btn-preset-edit" onclick="renamePreset(0)" title="Rename">✏️</button>
+      <button id="btn-preset-0" class="btn-preset">Routine 1</button>
+      <button id="btn-edit-0" class="btn-preset-edit" title="Rename">✏️</button>
     </div>
     <div class="preset-wrapper">
-      <button id="btn-preset-1" class="btn-preset" onclick="loadPreset(1)">Pre2</button>
-      <button class="btn-preset-edit" onclick="renamePreset(1)" title="Rename">✏️</button>
+      <button id="btn-preset-1" class="btn-preset">Routine 2</button>
+      <button id="btn-edit-1" class="btn-preset-edit" title="Rename">✏️</button>
     </div>
     <div class="preset-wrapper">
-      <button id="btn-preset-2" class="btn-preset" onclick="loadPreset(2)">Fresh</button>
-      <button class="btn-preset-edit" onclick="renamePreset(2)" title="Rename">✏️</button>
+      <button id="btn-preset-2" class="btn-preset">Default</button>
+      <button id="btn-edit-2" class="btn-preset-edit" title="Rename">✏️</button>
     </div>
   </div>
 
-  <!-- Preset Management Actions -->
   <div class="preset-actions">
-    <button class="btn-save-preset" onclick="saveCurrentPreset()">Save Current Edits to Active Preset</button>
-    <button class="btn-reset-defaults" onclick="resetPresetsToDefault()" title="Reset factory defaults">↺ Reset</button>
+    <button class="btn-save-preset" id="btn-save-preset">Save Changes to Active Slot</button>
+    <button class="btn-reset-defaults" id="btn-reset-defaults" title="Reset factory defaults">↺ Reset Defaults</button>
   </div>
 
-  <!-- Interval Input Section -->
   <div class="card">
     <div id="blocks-container"></div>
-    <button class="btn-add" onclick="addBlock()">+ Add Interval</button>
+    <button class="btn-add" id="btn-add-block">+ Add Interval</button>
   </div>
 
   <script>
@@ -159,49 +148,64 @@
     let isPaused = false;
     
     let currentBlockIdx = 0;
-    let inCountIn = true;
-    let countInBeepsLeft = 0;
+    let isTransitioning = false;
+    let transitionTimeRemaining = 5.0;
     let timeRemainingSeconds = 0;
-    let currentSPM = 0;
+    let currentSPM = 160;
     let nextNoteTime = 0;
     let timerID = null;
     let activePresetIdx = 0;
 
     const DEFAULT_PRESETS = [
       {
-        name: "Pre1",
+        name: "Routine 1",
         intervals: [
           { time: 2.5, spm: 160 },
           { time: 2.5, spm: 170 },
-          { time: 5,   spm: 180 },
-          { time: 2.5, spm: 170 },
-          { time: 2.5, spm: 160 }
+          { time: 5,   spm: 180 }
         ]
       },
       {
-        name: "Pre2",
+        name: "Routine 2",
         intervals: [
-          { time: 5,   spm: 120 },
           { time: 5,   spm: 130 },
-          { time: 5,   spm: 140 },
-          { time: 2.5, spm: 130 },
-          { time: 2.5, spm: 120 }
+          { time: 5,   spm: 140 }
         ]
       },
       {
-        name: "Fresh",
+        name: "Default",
         intervals: [
-          { time: 10,  spm: 90 }
+          { time: 5,   spm: 150 }
         ]
       }
     ];
 
-    let userPresets = JSON.parse(localStorage.getItem('cadtimer_user_presets')) || JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+    let userPresets = JSON.parse(localStorage.getItem('cadtimer_user_presets_v3')) || JSON.parse(JSON.stringify(DEFAULT_PRESETS));
 
-    window.onload = () => {
+    window.addEventListener('DOMContentLoaded', () => {
+      setupEventListeners();
       updatePresetButtonLabels();
       loadPreset(0);
-    };
+    });
+
+    function setupEventListeners() {
+      document.getElementById('btn-minus').addEventListener('click', () => adjustSPM(-1));
+      document.getElementById('btn-plus').addEventListener('click', () => adjustSPM(1));
+      document.getElementById('start-btn').addEventListener('click', togglePlay);
+      document.getElementById('reset-btn').addEventListener('click', reset);
+
+      document.getElementById('btn-preset-0').addEventListener('click', () => loadPreset(0));
+      document.getElementById('btn-preset-1').addEventListener('click', () => loadPreset(1));
+      document.getElementById('btn-preset-2').addEventListener('click', () => loadPreset(2));
+
+      document.getElementById('btn-edit-0').addEventListener('click', () => renamePreset(0));
+      document.getElementById('btn-edit-1').addEventListener('click', () => renamePreset(1));
+      document.getElementById('btn-edit-2').addEventListener('click', () => renamePreset(2));
+
+      document.getElementById('btn-save-preset').addEventListener('click', saveCurrentPreset);
+      document.getElementById('btn-reset-defaults').addEventListener('click', resetPresetsToDefault);
+      document.getElementById('btn-add-block').addEventListener('click', () => addBlock());
+    }
 
     function updatePresetButtonLabels() {
       userPresets.forEach((preset, index) => {
@@ -219,14 +223,20 @@
 
       const preset = userPresets[index];
       preset.intervals.forEach(item => addBlock(item.time, item.spm));
+      
+      if (preset.intervals.length > 0) {
+        currentSPM = preset.intervals[0].spm;
+        timeRemainingSeconds = preset.intervals[0].time * 60;
+        updateDisplay();
+      }
     }
 
     function renamePreset(index) {
       const currentName = userPresets[index].name;
-      const newName = prompt(`Rename preset "${currentName}":`, currentName);
+      const newName = prompt(`Rename slot "${currentName}":`, currentName);
       if (newName !== null && newName.trim() !== "") {
         userPresets[index].name = newName.trim();
-        localStorage.setItem('cadtimer_user_presets', JSON.stringify(userPresets));
+        localStorage.setItem('cadtimer_user_presets_v3', JSON.stringify(userPresets));
         updatePresetButtonLabels();
       }
     }
@@ -245,17 +255,18 @@
       }
 
       if (newIntervals.length === 0) {
-        return alert('Please add at least one valid interval before saving.');
+        alert('Please add at least one valid interval before saving.');
+        return;
       }
 
       userPresets[activePresetIdx].intervals = newIntervals;
-      localStorage.setItem('cadtimer_user_presets', JSON.stringify(userPresets));
-      alert(`Preset "${userPresets[activePresetIdx].name}" successfully saved!`);
+      localStorage.setItem('cadtimer_user_presets_v3', JSON.stringify(userPresets));
+      alert(`Slot "${userPresets[activePresetIdx].name}" successfully saved!`);
     }
 
     function resetPresetsToDefault() {
-      if (confirm("Reset all presets back to factory defaults?")) {
-        localStorage.removeItem('cadtimer_user_presets');
+      if (confirm("Reset all routines and the default slot back to factory settings?")) {
+        localStorage.removeItem('cadtimer_user_presets_v3');
         userPresets = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
         updatePresetButtonLabels();
         loadPreset(0);
@@ -282,9 +293,20 @@
           <label>SPM (Cadence)</label>
           <input type="number" class="block-spm" value="${spm}" min="30" max="300">
         </div>
-        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
+        <button class="btn-remove" type="button">×</button>
       `;
+      
+      div.querySelector('.btn-remove').addEventListener('click', () => {
+        div.remove();
+      });
+
       container.appendChild(div);
+      
+      if (!isRunning && container.children.length === 1) {
+        currentSPM = spm;
+        timeRemainingSeconds = minutes * 60;
+        updateDisplay();
+      }
     }
 
     function initAudio() {
@@ -340,7 +362,127 @@
       }
     }
 
+    function updateDisplay() {
+      document.getElementById('tempo-display').innerText = `${currentSPM} SPM`;
+      
+      let totalBlocks = intervals.length || 1;
+      let currentDisplayBlock = Math.min(currentBlockIdx + 1, totalBlocks);
+      let currentBlockObj = intervals[currentBlockIdx] || { rawMinutes: 5, rawSpm: currentSPM };
+      
+      if (isTransitioning) {
+        document.getElementById('phase').innerText = `Transition to Block ${currentDisplayBlock}/${totalBlocks}`;
+      } else {
+        document.getElementById('phase').innerText = `Block ${currentDisplayBlock}/${totalBlocks} - ${currentBlockObj.rawMinutes} min / ${currentBlockObj.rawSpm} spm`;
+      }
+
+      let activeSeconds = isTransitioning ? transitionTimeRemaining : timeRemainingSeconds;
+      let mins = Math.floor(Math.max(0, activeSeconds) / 60);
+      let secs = Math.floor(Math.max(0, activeSeconds) % 60);
+      document.getElementById('time-display').innerText = 
+        String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+    }
+
     function togglePlay() {
       initAudio();
+      const startBtn = document.getElementById('start-btn');
+
       if (!isRunning) {
-        if
+        readInputs();
+        if (intervals.length === 0) {
+          alert('Please add at least one valid interval.');
+          return;
+        }
+        isRunning = true;
+        isPaused = false;
+        currentBlockIdx = 0;
+        isTransitioning = true;
+        transitionTimeRemaining = 5.0;
+        currentSPM = intervals[0].spm;
+        
+        startBtn.innerText = "Pause";
+        startBtn.className = "main-btn btn-pause";
+        
+        nextNoteTime = audioCtx.currentTime + 0.1;
+        timerID = setInterval(scheduler, 25);
+      } else if (!isPaused) {
+        isPaused = true;
+        clearInterval(timerID);
+        startBtn.innerText = "Resume";
+        startBtn.className = "main-btn btn-start";
+      } else {
+        isPaused = false;
+        nextNoteTime = audioCtx.currentTime + 0.1;
+        timerID = setInterval(scheduler, 25);
+        startBtn.innerText = "Pause";
+        startBtn.className = "main-btn btn-pause";
+      }
+    }
+
+    function reset() {
+      isRunning = false;
+      isPaused = false;
+      isTransitioning = false;
+      clearInterval(timerID);
+      
+      const startBtn = document.getElementById('start-btn');
+      startBtn.innerText = "Start";
+      startBtn.className = "main-btn btn-start";
+      
+      currentBlockIdx = 0;
+      const firstSpmInput = document.querySelector('.block-spm');
+      const firstTimeInput = document.querySelector('.block-time');
+      
+      if (firstSpmInput) currentSPM = parseInt(firstSpmInput.value) || 160;
+      if (firstTimeInput) timeRemainingSeconds = (parseFloat(firstTimeInput.value) || 5) * 60;
+      
+      document.getElementById('phase').innerText = "Ready";
+      updateDisplay();
+    }
+
+    function scheduler() {
+      while (nextNoteTime < audioCtx.currentTime + 0.1) {
+        let beatInterval = 60.0 / currentSPM;
+
+        if (isTransitioning) {
+          // Play mid-pitch cadence tone (e.g., 600 Hz) during transition lead-in
+          playTone(600, 'sine', 0.06);
+          transitionTimeRemaining -= beatInterval;
+
+          if (transitionTimeRemaining <= 0) {
+            isTransitioning = false;
+            timeRemainingSeconds = intervals[currentBlockIdx].duration;
+            currentSPM = intervals[currentBlockIdx].spm;
+          }
+          nextNoteTime += beatInterval;
+        } else {
+          // Check if we are within the last 4 beats of the interval
+          let beatsLeftEstimate = timeRemainingSeconds / beatInterval;
+          let isWarningBeat = beatsLeftEstimate <= 4;
+
+          // Play high-pitch for final 4 beats, standard mid-pitch otherwise
+          let toneFreq = isWarningBeat ? 1400 : 600;
+          playTone(toneFreq, 'sine', 0.06);
+
+          timeRemainingSeconds -= beatInterval;
+
+          if (timeRemainingSeconds <= 0) {
+            currentBlockIdx++;
+            if (currentBlockIdx < intervals.length) {
+              isTransitioning = true;
+              transitionTimeRemaining = 5.0;
+              currentSPM = intervals[currentBlockIdx].spm;
+            } else {
+              playEndTune();
+              document.getElementById('phase').innerText = "Complete!";
+              reset();
+              return;
+            }
+          }
+          nextNoteTime += beatInterval;
+        }
+        updateDisplay();
+      }
+    }
+  </script>
+</body>
+</html>
