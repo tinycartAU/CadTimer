@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>CadTimer</title>
+  
+  <!-- Web App Manifest & Apple Touch Icon for Home Screen -->
+  <link rel="apple-touch-icon" href="CadTimer_Logo.png">
+  <link rel="icon" type="image/png" href="CadTimer_Logo.png">
+  <link rel="manifest" href='data:application/manifest+json,{"name":"CadTimer","short_name":"CadTimer","start_url":".","display":"standalone","background_color":"#121212","theme_color":"#121212","icons":[{"src":"CadTimer_Logo.png","sizes":"512x512","type":"image/png"}]}'>
+
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --accent: #f1c40f; /* Logo Yellow */
+      --accent-warn: #ff9800;
+      --text: #ffffff;
+      --text-dim: #aaaaaa;
+      --danger: #ff5252;
+      --preset-bg: #2d3748;
+      --preset-border: #4a5568;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 16px; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; }
+    
+    .app-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .header-logo { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+    h1 { font-size: 1.5rem; color: var(--accent); margin: 0; }
+    
+    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    
+    .display-panel { text-align: center; }
+    .phase-label { font-size: 0.9rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; }
+    
+    /* Timer & Cadence Adjustment Layout */
+    .timer-container { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; }
+    .timer { font-size: 3.2rem; font-weight: bold; font-variant-numeric: tabular-nums; flex: 1; text-align: center; }
+    
+    .btn-adjust {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: rgba(241, 196, 15, 0.1);
+      color: var(--accent);
+      font-size: 1.8rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.1s;
+    }
+    .btn-adjust:active {
+      background: var(--accent);
+      color: #000;
+      transform: scale(0.95);
+    }
+
+    .info { font-size: 1.2rem; color: var(--accent); font-weight: 600; margin-top: 4px; }
+
+    /* Controls directly under timer */
+    .controls { display: flex; gap: 12px; margin-top: 16px; }
+    button.main-btn { flex: 1; padding: 16px; font-size: 1.2rem; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; text-transform: uppercase; }
+    .btn-start { background: var(--accent); color: #000; }
+    .btn-pause { background: var(--accent-warn); color: #000; }
+    .btn-reset { background: #333; color: #fff; }
+
+    /* Preset Buttons Layout */
+    .presets-container { display: flex; gap: 8px; margin-bottom: 8px; }
+    .preset-wrapper { flex: 1; display: flex; gap: 2px; }
+    .btn-preset { flex: 1; padding: 10px 4px; font-size: 0.9rem; font-weight: 600; background: var(--preset-bg); border: 1px solid var(--preset-border); color: #fff; border-radius: 8px 0 0 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s; }
+    .btn-preset:active { background: var(--accent); color: #000; }
+    .btn-preset-edit { background: #1a202c; border: 1px solid var(--preset-border); border-left: none; color: var(--text-dim); padding: 0 8px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 0.9rem; }
+    .btn-preset-edit:hover { color: var(--accent); }
+
+    .preset-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+    .btn-save-preset { flex: 1; background: #22543d; color: #68d391; border: 1px solid #38a169; padding: 8px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+    .btn-reset-defaults { background: #742a2a; color: #feb2b2; border: 1px solid #e53e3e; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; }
+    
+    .block-item { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; }
+    .block-item input { background: #2a2a2a; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; width: 100%; font-size: 1rem; }
+    .block-item label { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2px; display: block; }
+    .input-group { display: flex; flex-direction: column; flex: 1; }
+    .btn-remove { background: var(--danger); border: none; color: white; width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 1.2rem; cursor: pointer; align-self: flex-end; }
+
+    .btn-add { background: #333; color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; width: 100%; font-size: 1rem; cursor: pointer; margin-top: 8px; }
+
+    .visual-flash { height: 6px; width: 100%; background: var(--card); border-radius: 3px; margin-top: 12px; transition: background 0.05s; }
+    .visual-flash.active { background: var(--accent); }
+    .visual-flash.warn { background: var(--accent-warn); }
+  </style>
+</head>
+<body>
+
+  <!-- Header with Logo and Yellow Text -->
+  <div class="app-header">
+    <img src="CadTimer_Logo.png" alt="Logo" class="header-logo">
+    <h1>CadTimer</h1>
+  </div>
+
+  <!-- Display & Main Controls Section -->
+  <div class="card display-panel">
+    <div id="phase" class="phase-label">Ready</div>
+    
+    <!-- Timer Section with - and + adjustment buttons -->
+    <div class="timer-container">
+      <button class="btn-adjust" onclick="adjustSPM(-1)">−</button>
+      <div id="time-display" class="timer">00:00</div>
+      <button class="btn-adjust" onclick="adjustSPM(1)">+</button>
+    </div>
+
+    <div id="tempo-display" class="info">-- SPM</div>
+    <div id="flash" class="visual-flash"></div>
+
+    <!-- Start & Reset Controls -->
+    <div class="controls">
+      <button id="start-btn" class="main-btn btn-start" onclick="togglePlay()">Start</button>
+      <button class="main-btn btn-reset" onclick="reset()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Preset Buttons Container -->
+  <div class="presets-container">
+    <div class="preset-wrapper">
+      <button id="btn-preset-0" class="btn-preset" onclick="loadPreset(0)">Pre1</button>
+      <button class="btn-preset-edit" onclick="renamePreset(0)" title="Rename">✏️</button>
+    </div>
+    <div class="preset-wrapper">
+      <button id="btn-preset-1" class="btn-preset" onclick="loadPreset(1)">Pre2</button>
+      <button class="btn-preset-edit" onclick="renamePreset(1)" title="Rename">✏️</button>
+    </div>
+    <div class="preset-wrapper">
+      <button id="btn-preset-2" class="btn-preset" onclick="loadPreset(2)">Fresh</button>
+      <button class="btn-preset-edit" onclick="renamePreset(2)" title="Rename">✏️</button>
+    </div>
+  </div>
+
+  <!-- Preset Management Actions -->
+  <div class="preset-actions">
+    <button class="btn-save-preset" onclick="saveCurrentPreset()">Save Current Edits to Active Preset</button>
+    <button class="btn-reset-defaults" onclick="resetPresetsToDefault()" title="Reset factory defaults">↺ Reset</button>
+  </div>
+
+  <!-- Interval Input Section -->
+  <div class="card">
+    <div id="blocks-container"></div>
+    <button class="btn-add" onclick="addBlock()">+ Add Interval</button>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let intervals = [];
+    let isRunning = false;
+    let isPaused = false;
+    
+    let currentBlockIdx = 0;
+    let inCountIn = true;
+    let countInBeepsLeft = 0;
+    let timeRemainingSeconds = 0;
+    let currentSPM = 0;
+    let nextNoteTime = 0;
+    let timerID = null;
+    let activePresetIdx = 0;
+
+    const DEFAULT_PRESETS = [
+      {
+        name: "Pre1",
+        intervals: [
+          { time: 2.5, spm: 160 },
+          { time: 2.5, spm: 170 },
+          { time: 5,   spm: 180 },
+          { time: 2.5, spm: 170 },
+          { time: 2.5, spm: 160 }
+        ]
+      },
+      {
+        name: "Pre2",
+        intervals: [
+          { time: 5,   spm: 120 },
+          { time: 5,   spm: 130 },
+          { time: 5,   spm: 140 },
+          { time: 2.5, spm: 130 },
+          { time: 2.5, spm: 120 }
+        ]
+      },
+      {
+        name: "Fresh",
+        intervals: [
+          { time: 10,  spm: 90 }
+        ]
+      }
+    ];
+
+    let userPresets = JSON.parse(localStorage.getItem('cadtimer_user_presets')) || JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+
+    window.onload = () => {
+      updatePresetButtonLabels();
+      loadPreset(0);
+    };
+
+    function updatePresetButtonLabels() {
+      userPresets.forEach((preset, index) => {
+        const btn = document.getElementById(`btn-preset-${index}`);
+        if (btn) btn.innerText = preset.name;
+      });
+    }
+
+    function loadPreset(index) {
+      if (isRunning) reset();
+      activePresetIdx = index;
+      
+      const container = document.getElementById('blocks-container');
+      container.innerHTML = '';
+
+      const preset = userPresets[index];
+      preset.intervals.forEach(item => addBlock(item.time, item.spm));
+    }
+
+    function renamePreset(index) {
+      const currentName = userPresets[index].name;
+      const newName = prompt(`Rename preset "${currentName}":`, currentName);
+      if (newName !== null && newName.trim() !== "") {
+        userPresets[index].name = newName.trim();
+        localStorage.setItem('cadtimer_user_presets', JSON.stringify(userPresets));
+        updatePresetButtonLabels();
+      }
+    }
+
+    function saveCurrentPreset() {
+      const times = document.querySelectorAll('.block-time');
+      const spms = document.querySelectorAll('.block-spm');
+      const newIntervals = [];
+
+      for (let i = 0; i < times.length; i++) {
+        const t = parseFloat(times[i].value);
+        const s = parseInt(spms[i].value);
+        if (t > 0 && s > 0) {
+          newIntervals.push({ time: t, spm: s });
+        }
+      }
+
+      if (newIntervals.length === 0) {
+        return alert('Please add at least one valid interval before saving.');
+      }
+
+      userPresets[activePresetIdx].intervals = newIntervals;
+      localStorage.setItem('cadtimer_user_presets', JSON.stringify(userPresets));
+      alert(`Preset "${userPresets[activePresetIdx].name}" successfully saved!`);
+    }
+
+    function resetPresetsToDefault() {
+      if (confirm("Reset all presets back to factory defaults?")) {
+        localStorage.removeItem('cadtimer_user_presets');
+        userPresets = JSON.parse(JSON.stringify(DEFAULT_PRESETS));
+        updatePresetButtonLabels();
+        loadPreset(0);
+      }
+    }
+
+    function adjustSPM(delta) {
+      if (currentSPM + delta >= 30 && currentSPM + delta <= 300) {
+        currentSPM += delta;
+        updateDisplay();
+      }
+    }
+
+    function addBlock(minutes = 5, spm = 160) {
+      const container = document.getElementById('blocks-container');
+      const div = document.createElement('div');
+      div.className = 'block-item';
+      div.innerHTML = `
+        <div class="input-group">
+          <label>Minutes</label>
+          <input type="number" class="block-time" value="${minutes}" min="0.1" step="0.1">
+        </div>
+        <div class="input-group">
+          <label>SPM (Cadence)</label>
+          <input type="number" class="block-spm" value="${spm}" min="30" max="300">
+        </div>
+        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.06) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+
+      const flashEl = document.getElementById('flash');
+      flashEl.className = freq > 1200 ? 'visual-flash warn' : 'visual-flash active';
+      setTimeout(() => flashEl.className = 'visual-flash', 50);
+    }
+
+    function playEndTune() {
+      const notes = [859.25, 983.99, 1187.77, 1518.51];
+      notes.forEach((freq, index) => {
+        setTimeout(() => {
+          playTone(freq, 'triangle', 0.25);
+        }, index * 140);
+      });
+    }
+
+    function readInputs() {
+      const times = document.querySelectorAll('.block-time');
+      const spms = document.querySelectorAll('.block-spm');
+      intervals = [];
+      for (let i = 0; i < times.length; i++) {
+        const t = parseFloat(times[i].value);
+        const s = parseInt(spms[i].value);
+        if (t > 0 && s > 0) {
+          intervals.push({ duration: t * 60, spm: s, rawMinutes: t, rawSpm: s });
+        }
+      }
+    }
+
+    function togglePlay() {
+      initAudio();
+      if (!isRunning) {
+        if
